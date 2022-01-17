@@ -62,14 +62,16 @@ const createBlog = async function (req, res) {
 
         if (tags) {
             if (Array.isArray(tags)) {
-                blogData['tags'] = [...tags]
+                const uniqueTagArr = [...new Set(tags)];
+                blogData["tags"] = uniqueTagArr
             }
 
         }
 
         if (subcategory) {
             if (Array.isArray(subcategory)) {
-                blogData['subcategory'] = [...subcategory]
+                const uniqueSubcategoryArr = [...new Set(subcategory)];
+                blogData['subcategory'] = uniqueSubcategoryArr
             }
 
         }
