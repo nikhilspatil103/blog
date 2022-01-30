@@ -67,7 +67,7 @@ const createBlog = async function (req, res) {
 
         if (tags) {
             if (Array.isArray(tags)) {
-                const uniqueTagArr = [...new Set(tags)];
+                const uniqueTagArr = [...new Set(tags)];   // new Set(tags) will set only unique values in an array
                 blogData["tags"] = uniqueTagArr
             }
 
@@ -75,7 +75,7 @@ const createBlog = async function (req, res) {
 
         if (subcategory) {
             if (Array.isArray(subcategory)) {
-                const uniqueSubcategoryArr = [...new Set(subcategory)];
+                const uniqueSubcategoryArr = [...new Set(subcategory)];  // new Set(subcategory) will set only unique values in an array
                 blogData['subcategory'] = uniqueSubcategoryArr
             }
 
@@ -124,7 +124,7 @@ const getBlog = async function (req, res) {
                 filterQuery['category'] = category.trim()
             }
             if (isValid(tags)) {
-                const tagsArr = tags.trim().split(',').map(x => x.trim())
+                const tagsArr = tags.trim().split(',').map(x => x.trim())  // deleting the spaces within words
                 filterQuery['tags'] = { $all: tagsArr }
             }
             if (isValid(subcategory)) {
@@ -145,12 +145,14 @@ const getBlog = async function (req, res) {
 }
 
 
-async function updateDetails(req, res) {
+// async function updateDetails(req, res) {
+    const updateDetails = async function (req, res) {
     try {
         let requestBody = req.body
         let authorIdFromToken = req.authorId
         let blogId = req.params.blogId
-
+         
+        const { title, body, tags, subcategory } = requestBody;
         if (!isValidObjectId(blogId)) {
             res.status(400).send({ status: false, message: `${blogId} is not a valid token id` })
             return
@@ -160,7 +162,7 @@ async function updateDetails(req, res) {
             return res.status(400).send({ status: false, msg: "No such blog found" });
         }
 
-        if (Blog.authorId.toString() !== authorIdFromToken) {
+        if (Blog.authorId.toString() !== authorIdFromToken) {     //Authorization
             res.status(401).send({ status: false, message: `Unauthorized access! Owner info doesn't match` });
             return
         }
@@ -199,7 +201,7 @@ async function updateDetails(req, res) {
 
             const updatedBlog = await blogModel.findOneAndUpdate({ _id: req.params.blogId },
                 {
-                    title: title, body: body, $addToSet: { tags: tags, subcategory: subcategory },
+                    title: title, body: body, $addToSet: { tags: tags, subcategory: subcategory },  //$addToSet will set unique values
                     isPublished: isPublished
                 }, { new: true })
 
@@ -233,7 +235,7 @@ const deleteBlog = async function (req, res) {
             return res.status(400).send({ status: false, msg: "No such blog found" });
         }
 
-        if (Blog.authorId.toString() !== authorIdFromToken) {
+        if (Blog.authorId.toString() !== authorIdFromToken) {    //Authorization
             res.status(401).send({ status: false, message: `Unauthorized access! Owner info doesn't match` });
             return
         }
@@ -258,6 +260,7 @@ const deleteSpecific = async function (req, res) {
         const filterQuery = { isDeleted: false, deletedAt: null }
         const queryParams = req.query
         const authorIdFromToken = req.authorId
+
         if (!isValidObjectId(authorIdFromToken)) {
             res.status(400).send({ status: false, message: `${authorIdFromToken} is not a valid token id` })
             return
@@ -266,7 +269,10 @@ const deleteSpecific = async function (req, res) {
             res.status(400).send({ status: false, message: `No query params received. Aborting delete operation` })
             return
         }
+
+        //extract body
         const { authorId, category, tags, subcategory, isPublished } = queryParams
+
         if (isValid(authorId) && isValidObjectId(authorId)) {
             filterQuery['authorId'] = authorId
         }
@@ -277,29 +283,37 @@ const deleteSpecific = async function (req, res) {
             filterQuery['isPublished'] = isPublished
         }
         if (isValid(tags)) {
-            const tagsArr = tags.trim().split(',').map(tag => tag.trim());
+            const tagsArr = tags.trim().split(',').map(tag => tag.trim());   // deleting the spaces within words
             filterQuery['tags'] = { $all: tagsArr }
         }
         if (isValid(subcategory)) {
             const subcatArr = subcategory.trim().split(',').map(subcat => subcat.trim());
             filterQuery['subcategory'] = { $all: subcatArr }
         }
+
+        //Validation Ends
+
         const findBlogs = await blogModel.find(filterQuery);
+
         if (Array.isArray(findBlogs) && findBlogs.length === 0) {
             res.status(404).send({ status: false, message: 'No matching blogs found' })
             return
         }
+
         let blogToBeDeleted = []
+
         findBlogs.map(blog => {
-            if (blog.authorId.toString() === authorIdFromToken && blog.isDeleted === false) {
-                blogToBeDeleted.push(blog._id)
+            if (blog.authorId.toString() === authorIdFromToken && blog.isDeleted === false) {  //Authorization
+                blogToBeDeleted.push(blog._id)                                                 // this will push only authorized blogs in blogToBeDeleted
             }
         })
         if (blogToBeDeleted.length === 0) {
             res.status(404).send({ status: false, message: ' No blogs found for deletion.' })
             return
         }
+
         await blogModel.updateMany({ _id: { $in: blogToBeDeleted } }, { $set: { isDeleted: true, deletedAt: new Date() } })
+        
         res.status(200).send({ status: true, message: 'Blog deleted successfully' });
     }
     catch (err) {

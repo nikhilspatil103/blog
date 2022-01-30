@@ -27,7 +27,7 @@ const createAuthor = async function (req, res) {
         // verify body
         let requestBody = req.body
 
-        
+
 
         if (!isValidRequestBody(requestBody)) {
             return res.status(400).send({ status: false, message: "Invalid request parameter, please provide author Detaills" })
@@ -66,10 +66,13 @@ const createAuthor = async function (req, res) {
             return res.status(400).send({ status: false, message: `${email} email address is already registered` })
         }
         //validation Ends
-        //email.trim()
+
         const authorData = { fname, lname, title, email, password }
+
         const newAuthor = await authorModel.create(authorData)
+
         res.status(201).send({ status: true, message: `Author created successfully`, data: newAuthor })
+
     } catch (error) {
         res.status(500).send({ status: false, message: error.message });
     }
@@ -84,6 +87,7 @@ const loginAuthor = async function (req, res) {
         }
         //Extract params
         const { email, password } = requestBody
+
         //Validation start
         if (!isValid(email)) {
             return res.status(400).send({ status: false, message: `Email is required` })
@@ -95,18 +99,19 @@ const loginAuthor = async function (req, res) {
         if (!isValid(password)) {
             return res.status(400).send({ status: false, message: `Password is required` })
         }
-        //Validity ends
+        //Validation ends
 
         const author = await authorModel.findOne({ email, password })
 
         if (!author) {
             return res.status(401).send({ status: false, message: `Invalid login Email` });
         }
-        let token = await jwt.sign({ authorId: author._id }, "projectBlog")
+        let token = await jwt.sign({ authorId: author._id }, "projectBlog")                     //Token generated
 
         res.header('x-api-key', token)
-        
-        res.status(200).send({ status: true, message: `Author login successfull`,authorId : author._id, data: { token } });
+
+        res.status(200).send({ status: true, message: `Author login successfull`, authorId: author._id, data: { token } });
+
     } catch (error) {
         res.status(500).send({ status: false, message: error.message });
     }
